@@ -14,9 +14,10 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { UserPlus, ArrowLeft } from "lucide-react";
+import { UserPlus, ArrowLeft, Printer } from "lucide-react";
 import { Link } from "react-router";
 import { getCustomFields, getActiveDegreePrograms, getActiveCourses, createStudent } from "@/lib/queries";
+import { PrintButton } from "@/components/StudentPDF";
 
 type CustomField = {
   id: string;
@@ -37,6 +38,7 @@ export default function AddStudent() {
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [lastSubmitted, setLastSubmitted] = useState<{ data: Record<string, string>; createdAt: string } | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -108,6 +110,7 @@ export default function AddStudent() {
     try {
       await createStudent(fieldData);
       toast.success("Student registered successfully!");
+      setLastSubmitted({ data: fieldData, createdAt: new Date().toISOString() });
       const reset: Record<string, string> = {};
       fields.forEach((f) => { reset[f.id] = ""; });
       setFormData(reset);
@@ -244,6 +247,29 @@ export default function AddStudent() {
           </Button>
         </div>
       </form>
+
+      {lastSubmitted && (
+        <Card className="border-green-200 bg-green-50">
+          <CardContent className="pt-6 flex items-center justify-between">
+            <div>
+              <p className="text-green-800 font-medium">Student registered successfully!</p>
+              <p className="text-green-600 text-sm">You can now print the admission form.</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <PrintButton
+                studentData={lastSubmitted.data}
+                status="new"
+                createdAt={lastSubmitted.createdAt}
+                studentName={lastSubmitted.data["Full Name"]}
+                variant="outline"
+              />
+              <Button variant="outline" onClick={() => setLastSubmitted(null)}>
+                Dismiss
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

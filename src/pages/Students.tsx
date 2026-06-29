@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { Search, Filter, Eye, Trash2, FileSpreadsheet, Users, ArrowUpDown } from "lucide-react";
 import { getStudents, deleteStudent, updateStudent, logActivity } from "@/lib/queries";
+import { PrintButton } from "@/components/StudentPDF";
 import * as XLSX from "xlsx";
 
 type Student = {
@@ -251,6 +252,12 @@ export default function Students() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
+                          <PrintButton
+                            studentData={student.data}
+                            status={student.status}
+                            createdAt={student.created_at}
+                            studentName={student.data["Full Name"]}
+                          />
                           <Dialog>
                             <DialogTrigger asChild>
                               <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setSelectedStudent(student)}>
@@ -259,7 +266,18 @@ export default function Students() {
                             </DialogTrigger>
                             <DialogContent className="max-w-lg">
                               <DialogHeader>
-                                <DialogTitle>Student Details</DialogTitle>
+                                <DialogTitle className="flex items-center justify-between">
+                                  Student Details
+                                  {selectedStudent && (
+                                    <PrintButton
+                                      studentData={selectedStudent.data}
+                                      status={selectedStudent.status}
+                                      createdAt={selectedStudent.created_at}
+                                      studentName={selectedStudent.data["Full Name"]}
+                                      variant="outline"
+                                    />
+                                  )}
+                                </DialogTitle>
                               </DialogHeader>
                               {selectedStudent && (
                                 <div className="grid grid-cols-2 gap-4 text-sm">
