@@ -8,6 +8,7 @@ import {
   Clock,
   TrendingUp,
   GraduationCap,
+  BookOpen,
   ArrowUpRight,
   Shield,
   Download,
@@ -58,6 +59,17 @@ const statusLabels: Record<string, string> = {
   rejected: "Rejected",
 };
 
+const breakdownColors = [
+  "bg-blue-100 text-blue-800",
+  "bg-green-100 text-green-800",
+  "bg-purple-100 text-purple-800",
+  "bg-orange-100 text-orange-800",
+  "bg-cyan-100 text-cyan-800",
+  "bg-pink-100 text-pink-800",
+  "bg-amber-100 text-amber-800",
+  "bg-teal-100 text-teal-800",
+];
+
 type Student = {
   id: string;
   created_by_id: string | null;
@@ -88,6 +100,28 @@ export default function Dashboard() {
     const fromStudents = new Set(allStudents.map((s) => s.data["Degree Program"]).filter(Boolean));
     return [...new Set([...dbPrograms, ...fromStudents])];
   }, [allStudents, dbPrograms]);
+
+  const degreeCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    allStudents.forEach((s) => {
+      const degree = s.data["Degree Program"];
+      if (degree) {
+        counts[degree] = (counts[degree] || 0) + 1;
+      }
+    });
+    return Object.fromEntries(Object.entries(counts).sort((a, b) => b[1] - a[1]));
+  }, [allStudents]);
+
+  const courseCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    allStudents.forEach((s) => {
+      const course = s.data["Interested Course"];
+      if (course) {
+        counts[course] = (counts[course] || 0) + 1;
+      }
+    });
+    return Object.fromEntries(Object.entries(counts).sort((a, b) => b[1] - a[1]));
+  }, [allStudents]);
 
   const staffNames = useMemo(() => {
     const map = new Map<string, string>();
@@ -201,7 +235,8 @@ export default function Dashboard() {
       total={total}
       enrolledCount={enrolledCount}
       contactedCount={contactedCount}
-      statusCounts={statusCounts}
+      degreeCounts={degreeCounts}
+      courseCounts={courseCounts}
       staffPerf={staffPerf}
       recentStudents={recentStudents}
       filteredStudents={filteredStudents}
@@ -237,7 +272,8 @@ function AdminDashboard({
   total,
   enrolledCount,
   contactedCount,
-  statusCounts,
+  degreeCounts,
+  courseCounts,
   staffPerf,
   recentStudents,
   filteredStudents,
@@ -258,7 +294,8 @@ function AdminDashboard({
   total: number;
   enrolledCount: number;
   contactedCount: number;
-  statusCounts: Record<string, number>;
+  degreeCounts: Record<string, number>;
+  courseCounts: Record<string, number>;
   staffPerf: Record<string, unknown>[];
   recentStudents: Student[];
   filteredStudents: Student[];
@@ -482,31 +519,73 @@ function AdminDashboard({
         </CardContent>
       </Card>
 
-      {/* Status Breakdown */}
+      {/* Degree Program Breakdown */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Status Breakdown</CardTitle>
+          <CardTitle className="text-base">Degree Program Breakdown</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            {Object.entries(statusCounts).map(([status, count]) => (
-              <div key={status} className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className={`h-2.5 w-2.5 rounded-full ${statusColors[status]?.split(" ")[0] ?? "bg-gray-200"}`} />
-                  <span className="text-sm">{statusLabels[status] ?? status}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-primary rounded-full transition-all"
-                      style={{ width: `${total > 0 ? (count / total) * 100 : 0}%` }}
-                    />
+          {Object.keys(degreeCounts).length === 0 ? (
+            <div className="text-center py-6 text-muted-foreground">
+              <GraduationCap className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p>No degree program data yet</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {Object.entries(degreeCounts).map(([degree, count], i) => (
+                <div key={degree} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className={`h-2.5 w-2.5 rounded-full ${breakdownColors[i % breakdownColors.length].split(" ")[0]}`} />
+                    <span className="text-sm">{degree}</span>
                   </div>
-                  <span className="text-sm font-medium w-6 text-right">{count}</span>
+                  <div className="flex items-center gap-3">
+                    <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-primary rounded-full transition-all"
+                        style={{ width: `${total > 0 ? (count / total) * 100 : 0}%` }}
+                      />
+                    </div>
+                    <span className="text-sm font-medium w-6 text-right">{count}</span>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Course Breakdown */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Course Breakdown</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {Object.keys(courseCounts).length === 0 ? (
+            <div className="text-center py-6 text-muted-foreground">
+              <BookOpen className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p>No course data yet</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {Object.entries(courseCounts).map(([course, count], i) => (
+                <div key={course} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className={`h-2.5 w-2.5 rounded-full ${breakdownColors[i % breakdownColors.length].split(" ")[0]}`} />
+                    <span className="text-sm">{course}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-32 h-2 bg-muted rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-primary rounded-full transition-all"
+                        style={{ width: `${total > 0 ? (count / total) * 100 : 0}%` }}
+                      />
+                    </div>
+                    <span className="text-sm font-medium w-6 text-right">{count}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
