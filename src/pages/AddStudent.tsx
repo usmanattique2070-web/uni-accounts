@@ -261,6 +261,7 @@ export default function AddStudent() {
                 status="new"
                 createdAt={lastSubmitted.createdAt}
                 studentName={lastSubmitted.data["Full Name"]}
+                fields={fields.map((f) => ({ label: f.label, sort_order: f.sort_order }))}
                 variant="outline"
               />
               <Button variant="outline" onClick={() => setLastSubmitted(null)}>

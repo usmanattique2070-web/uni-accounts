@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { Search, Filter, Eye, Trash2, FileSpreadsheet, Users, ArrowUpDown } from "lucide-react";
-import { getStudents, deleteStudent, updateStudent, logActivity } from "@/lib/queries";
+import { getStudents, deleteStudent, updateStudent, logActivity, getCustomFields } from "@/lib/queries";
 import { PrintButton } from "@/components/StudentPDF";
 import * as XLSX from "xlsx";
 
@@ -21,6 +21,8 @@ type Student = {
   created_at: string;
   updated_at: string;
 };
+
+type FieldDef = { label: string; sort_order: number };
 
 const statusColors: Record<string, string> = {
   new: "bg-blue-100 text-blue-800",
@@ -47,10 +49,21 @@ export default function Students() {
   const [sortField, setSortField] = useState<"name" | "date" | "status">("date");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [fields, setFields] = useState<FieldDef[]>([]);
 
   useEffect(() => {
     loadStudents();
+    loadFields();
   }, []);
+
+  async function loadFields() {
+    try {
+      const data = await getCustomFields();
+      setFields(data.map((f: any) => ({ label: f.label, sort_order: f.sort_order })));
+    } catch (err) {
+      console.error(err);
+    }
+  }
 
   async function loadStudents() {
     try {
@@ -257,6 +270,7 @@ export default function Students() {
                             status={student.status}
                             createdAt={student.created_at}
                             studentName={student.data["Full Name"]}
+                            fields={fields}
                           />
                           <Dialog>
                             <DialogTrigger asChild>
@@ -274,6 +288,7 @@ export default function Students() {
                                       status={selectedStudent.status}
                                       createdAt={selectedStudent.created_at}
                                       studentName={selectedStudent.data["Full Name"]}
+                                      fields={fields}
                                       variant="outline"
                                     />
                                   )}
