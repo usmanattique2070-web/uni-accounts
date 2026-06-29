@@ -42,7 +42,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getStudents, getStudentStats, getStaffPerformance, getCustomFields, getDegreePrograms, getDeletionRequests, approveDeletionRequest, rejectDeletionRequest, logActivity } from "@/lib/queries";
+import { getStudents, getStudentStats, getStaffPerformance, getCustomFields, getDegreePrograms, getCourses, getDeletionRequests, approveDeletionRequest, rejectDeletionRequest, logActivity } from "@/lib/queries";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 
@@ -99,6 +99,7 @@ export default function Dashboard() {
   const [previewOpen, setPreviewOpen] = useState(false);
 
   const [dbPrograms, setDbPrograms] = useState<string[]>([]);
+  const [dbCourses, setDbCourses] = useState<string[]>([]);
 
   const programs = useMemo(() => {
     const fromStudents = new Set(allStudents.map((s) => s.data["Degree Program"]).filter(Boolean));
@@ -107,8 +108,8 @@ export default function Dashboard() {
 
   const courses = useMemo(() => {
     const fromStudents = new Set(allStudents.map((s) => s.data["Interested Course"]).filter(Boolean));
-    return [...fromStudents];
-  }, [allStudents]);
+    return [...new Set([...dbCourses, ...fromStudents])];
+  }, [allStudents, dbCourses]);
 
   const degreeCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -167,6 +168,11 @@ export default function Dashboard() {
         try {
           const progs = (await getDegreePrograms()) as unknown as { name: string }[];
           setDbPrograms(progs.map((p) => p.name));
+        } catch { /* ignore */ }
+
+        try {
+          const crs = (await getCourses()) as unknown as { name: string }[];
+          setDbCourses(crs.map((c) => c.name));
         } catch { /* ignore */ }
 
         if (isAdmin) {
