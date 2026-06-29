@@ -91,14 +91,6 @@ export default function AddStudent() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const requiredFields = fields.filter((f) => f.is_required);
-    for (const f of requiredFields) {
-      if (!formData[f.id]?.trim()) {
-        toast.error(`Please fill in "${f.label}"`);
-        return;
-      }
-    }
-
     const fieldData: Record<string, string> = {};
     fields.forEach((f) => {
       if (formData[f.id]) {
@@ -166,7 +158,6 @@ export default function AddStudent() {
                       placeholder={`Enter ${field.label.toLowerCase()}`}
                       value={formData[field.id] || ""}
                       onChange={(e) => handleChange(field.id, e.target.value)}
-                      required={field.is_required}
                     />
                   )}
                   {field.type === "textarea" && (
@@ -185,7 +176,6 @@ export default function AddStudent() {
                       placeholder={`Enter ${field.label.toLowerCase()}`}
                       value={formData[field.id] || ""}
                       onChange={(e) => handleChange(field.id, e.target.value)}
-                      required={field.is_required}
                     />
                   )}
                   {field.type === "date" && (
@@ -194,7 +184,6 @@ export default function AddStudent() {
                       type="date"
                       value={formData[field.id] || ""}
                       onChange={(e) => handleChange(field.id, e.target.value)}
-                      required={field.is_required}
                     />
                   )}
                   {field.type === "boolean" && (
