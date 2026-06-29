@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { LogIn } from "lucide-react";
 import { signIn } from "@/lib/queries";
-import niasLogo from "@/assets/niaslogo.png";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -46,7 +45,7 @@ export default function Login() {
       <Card className="w-full max-w-sm shadow-lg">
         <CardHeader className="text-center space-y-2">
           <div className="mx-auto h-14 w-14 rounded-xl flex items-center justify-center mb-2">
-            <img src={niasLogo} alt="NIAS Logo" className="h-14 w-14 object-contain rounded-xl" />
+            <img src="/niaslogo.png" alt="NIAS Logo" className="h-14 w-14 object-contain rounded-xl" />
           </div>
           <CardTitle className="text-xl">University Admission System</CardTitle>
           <p className="text-sm text-muted-foreground">Sign in to your account</p>
