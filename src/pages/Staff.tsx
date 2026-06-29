@@ -5,10 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { Shield, Users, UserCog, Crown, User, Calendar, UserPlus, Key, UserX, UserCheck } from "lucide-react";
-import { getUsers, updateUserRole, updateUserActive, logActivity } from "@/lib/queries";
+import { Users, UserCog, Crown, User, Calendar, UserPlus, Key, UserX, UserCheck, Trash2 } from "lucide-react";
+import { getUsers, updateUserRole, updateUserActive, deleteUser, logActivity } from "@/lib/queries";
 import { supabase } from "@/lib/supabase";
 
 type StaffMember = {
@@ -35,6 +36,10 @@ export default function Staff() {
 
   const [resetPassword, setResetPassword] = useState("");
   const [resetting, setResetting] = useState(false);
+
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteUserId, setDeleteUserId] = useState<string | null>(null);
+  const [deleteUserName, setDeleteUserName] = useState("");
 
   useEffect(() => { loadStaff(); }, []);
 
@@ -104,6 +109,21 @@ export default function Staff() {
       toast.success(isActive ? "Staff unsuspended" : "Staff suspended");
     } catch {
       toast.error("Failed to update status");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteUserId) return;
+    try {
+      await deleteUser(deleteUserId);
+      await logActivity("delete", "staff", deleteUserId);
+      setStaffList((prev) => prev.filter((s) => s.id !== deleteUserId));
+      toast.success("Staff member deleted");
+      setDeleteOpen(false);
+      setDeleteUserId(null);
+      setDeleteUserName("");
+    } catch {
+      toast.error("Failed to delete staff member");
     }
   };
 
@@ -181,7 +201,24 @@ export default function Staff() {
               </Button>
             </form>
           </DialogContent>
-        </Dialog>
+      </Dialog>
+
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Staff Member</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{deleteUserName}</strong>? Their account will be removed, but all student data they created will be preserved in the system.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => { setDeleteUserId(null); setDeleteUserName(""); }}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       </div>
 
       <Dialog open={resetOpen} onOpenChange={setResetOpen}>
@@ -301,6 +338,15 @@ export default function Staff() {
                             onClick={() => handleSuspend(member.id, !member.is_active)}
                             title={member.is_active ? "Suspend" : "Unsuspend"}>
                             {member.is_active ? <UserX className="h-4 w-4 text-orange-500" /> : <UserCheck className="h-4 w-4 text-green-500" />}
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8"
+                            onClick={() => {
+                              setDeleteUserId(member.id);
+                              setDeleteUserName(member.name || "Unnamed");
+                              setDeleteOpen(true);
+                            }}
+                            title="Delete">
+                            <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
                         </div>
                       </TableCell>
