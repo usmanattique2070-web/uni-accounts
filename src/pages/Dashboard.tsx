@@ -89,7 +89,7 @@ export default function Dashboard() {
   const [allStudents, setAllStudents] = useState<Student[]>([]);
   const [fieldLabels, setFieldLabels] = useState<string[]>([]);
 
-  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterCourse, setFilterCourse] = useState("all");
   const [filterProgram, setFilterProgram] = useState("all");
   const [filterStaff, setFilterStaff] = useState("all");
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -100,6 +100,11 @@ export default function Dashboard() {
     const fromStudents = new Set(allStudents.map((s) => s.data["Degree Program"]).filter(Boolean));
     return [...new Set([...dbPrograms, ...fromStudents])];
   }, [allStudents, dbPrograms]);
+
+  const courses = useMemo(() => {
+    const fromStudents = new Set(allStudents.map((s) => s.data["Interested Course"]).filter(Boolean));
+    return [...fromStudents];
+  }, [allStudents]);
 
   const degreeCounts = useMemo(() => {
     const counts: Record<string, number> = {};
@@ -133,8 +138,8 @@ export default function Dashboard() {
 
   const filteredStudents = useMemo(() => {
     let result = allStudents;
-    if (filterStatus !== "all") {
-      result = result.filter((s) => s.status === filterStatus);
+    if (filterCourse !== "all") {
+      result = result.filter((s) => s.data["Interested Course"] === filterCourse);
     }
     if (filterProgram !== "all") {
       result = result.filter((s) => s.data["Degree Program"] === filterProgram);
@@ -143,7 +148,7 @@ export default function Dashboard() {
       result = result.filter((s) => s.created_by_id === filterStaff);
     }
     return result;
-  }, [allStudents, filterStatus, filterProgram, filterStaff]);
+  }, [allStudents, filterCourse, filterProgram, filterStaff]);
 
   useEffect(() => {
     async function load() {
@@ -241,9 +246,10 @@ export default function Dashboard() {
       recentStudents={recentStudents}
       filteredStudents={filteredStudents}
       programs={programs}
+      courses={courses}
       staffNames={staffNames}
-      filterStatus={filterStatus}
-      setFilterStatus={setFilterStatus}
+      filterCourse={filterCourse}
+      setFilterCourse={setFilterCourse}
       filterProgram={filterProgram}
       setFilterProgram={setFilterProgram}
       filterStaff={filterStaff}
@@ -278,9 +284,10 @@ function AdminDashboard({
   recentStudents,
   filteredStudents,
   programs,
+  courses,
   staffNames,
-  filterStatus,
-  setFilterStatus,
+  filterCourse,
+  setFilterCourse,
   filterProgram,
   setFilterProgram,
   filterStaff,
@@ -300,9 +307,10 @@ function AdminDashboard({
   recentStudents: Student[];
   filteredStudents: Student[];
   programs: string[];
+  courses: string[];
   staffNames: Map<string, string>;
-  filterStatus: string;
-  setFilterStatus: (v: string) => void;
+  filterCourse: string;
+  setFilterCourse: (v: string) => void;
   filterProgram: string;
   setFilterProgram: (v: string) => void;
   filterStaff: string;
@@ -413,17 +421,15 @@ function AdminDashboard({
             <div className="flex-1 space-y-2">
               <p className="text-sm text-muted-foreground">Filter students before downloading</p>
               <div className="flex flex-col sm:flex-row gap-3">
-                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <Select value={filterCourse} onValueChange={setFilterCourse}>
                   <SelectTrigger className="w-[160px]">
-                    <SelectValue placeholder="Status" />
+                    <SelectValue placeholder="Course" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">All Statuses</SelectItem>
-                    <SelectItem value="new">New</SelectItem>
-                    <SelectItem value="contacted">Contacted</SelectItem>
-                    <SelectItem value="follow_up">Follow Up</SelectItem>
-                    <SelectItem value="enrolled">Enrolled</SelectItem>
-                    <SelectItem value="rejected">Rejected</SelectItem>
+                    <SelectItem value="all">All Courses</SelectItem>
+                    {courses.map((c) => (
+                      <SelectItem key={c} value={c}>{c}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
 
