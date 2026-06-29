@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { LogIn } from "lucide-react";
 import { signIn } from "@/lib/queries";
-import niasLogo from "@/assets/niaslogo.jpg";
+import niasLogo from "@/assets/niaslogo.png";
 
 export default function Login() {
   const navigate = useNavigate();
