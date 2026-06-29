@@ -14,6 +14,9 @@ import {
   Download,
   FileSpreadsheet,
   AlertCircle,
+  Trash2,
+  CheckCircle,
+  XCircle,
 } from "lucide-react";
 import { useNavigate } from "react-router";
 import { Button } from "@/components/ui/button";
@@ -39,7 +42,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getStudents, getStudentStats, getStaffPerformance, getCustomFields, getDegreePrograms } from "@/lib/queries";
+import { getStudents, getStudentStats, getStaffPerformance, getCustomFields, getDegreePrograms, getDeletionRequests, approveDeletionRequest, rejectDeletionRequest, logActivity } from "@/lib/queries";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 
@@ -88,6 +91,7 @@ export default function Dashboard() {
   const [staffPerf, setStaffPerf] = useState<Record<string, unknown>[]>([]);
   const [allStudents, setAllStudents] = useState<Student[]>([]);
   const [fieldLabels, setFieldLabels] = useState<string[]>([]);
+  const [deletionRequests, setDeletionRequests] = useState<Record<string, unknown>[]>([]);
 
   const [filterCourse, setFilterCourse] = useState("all");
   const [filterProgram, setFilterProgram] = useState("all");
@@ -172,6 +176,11 @@ export default function Dashboard() {
 
           const perf = await getStaffPerformance();
           setStaffPerf(perf);
+
+          try {
+            const requests = await getDeletionRequests();
+            setDeletionRequests(requests as unknown as Record<string, unknown>[]);
+          } catch { /* ignore */ }
         } else {
           setTotal(students.length);
           const counts: Record<string, number> = {};
@@ -188,6 +197,30 @@ export default function Dashboard() {
     }
     load();
   }, [isAdmin]);
+
+  const handleApproveDeletion = async (requestId: string) => {
+    try {
+      await approveDeletionRequest(requestId);
+      setDeletionRequests((prev) => prev.filter((r) => r.id !== requestId));
+      setAllStudents((prev) => prev.filter((s) => {
+        const request = deletionRequests.find((r) => r.id === requestId);
+        return request ? s.id !== request.student_id : true;
+      }));
+      toast.success("Deletion approved and student removed");
+    } catch {
+      toast.error("Failed to approve deletion");
+    }
+  };
+
+  const handleRejectDeletion = async (requestId: string) => {
+    try {
+      await rejectDeletionRequest(requestId);
+      setDeletionRequests((prev) => prev.filter((r) => r.id !== requestId));
+      toast.success("Deletion request rejected");
+    } catch {
+      toast.error("Failed to reject deletion");
+    }
+  };
 
   const exportToExcel = () => {
     const data = filteredStudents.map((s) => {
@@ -257,6 +290,9 @@ export default function Dashboard() {
       previewOpen={previewOpen}
       setPreviewOpen={setPreviewOpen}
       exportToExcel={exportToExcel}
+      deletionRequests={deletionRequests}
+      onApproveDeletion={handleApproveDeletion}
+      onRejectDeletion={handleRejectDeletion}
       navigate={navigate}
     />
   ) : (
@@ -295,6 +331,9 @@ function AdminDashboard({
   previewOpen,
   setPreviewOpen,
   exportToExcel,
+  deletionRequests,
+  onApproveDeletion,
+  onRejectDeletion,
   navigate,
 }: {
   user: { name?: string } | null;
@@ -318,6 +357,9 @@ function AdminDashboard({
   previewOpen: boolean;
   setPreviewOpen: (v: boolean) => void;
   exportToExcel: () => void;
+  deletionRequests: Record<string, unknown>[];
+  onApproveDeletion: (requestId: string) => void;
+  onRejectDeletion: (requestId: string) => void;
   navigate: (path: string) => void;
 }) {
   return (
@@ -594,6 +636,65 @@ function AdminDashboard({
           )}
         </CardContent>
       </Card>
+
+      {/* Pending Deletion Requests */}
+      {deletionRequests.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 text-orange-500" />
+              Pending Deletion Requests ({deletionRequests.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Student Name</TableHead>
+                    <TableHead>Requested By</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {deletionRequests.map((request) => (
+                    <TableRow key={request.id as string}>
+                      <TableCell className="font-medium">{request.student_name as string}</TableCell>
+                      <TableCell>{staffNames.get(request.requested_by as string) || "Unknown"}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {new Date(request.created_at as string).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 text-green-600 hover:text-green-700 hover:bg-green-50"
+                            onClick={() => onApproveDeletion(request.id as string)}
+                          >
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Approve
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="h-8 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => onRejectDeletion(request.id as string)}
+                          >
+                            <XCircle className="h-4 w-4 mr-1" />
+                            Reject
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Recent Students */}
       <Card>

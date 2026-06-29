@@ -183,6 +183,38 @@ export interface Database {
           created_at?: string
         }
       }
+      deletion_requests: {
+        Row: {
+          id: string
+          student_id: string
+          student_name: string
+          requested_by: string
+          status: 'pending' | 'approved' | 'rejected'
+          created_at: string
+          reviewed_by: string | null
+          reviewed_at: string | null
+        }
+        Insert: {
+          id?: string
+          student_id: string
+          student_name: string
+          requested_by: string
+          status?: 'pending' | 'approved' | 'rejected'
+          created_at?: string
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+        }
+        Update: {
+          id?: string
+          student_id?: string
+          student_name?: string
+          requested_by?: string
+          status?: 'pending' | 'approved' | 'rejected'
+          created_at?: string
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+        }
+      }
     }
     Functions: Record<string, never>
   }

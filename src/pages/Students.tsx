@@ -8,8 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { Search, Filter, Eye, Trash2, FileSpreadsheet, Users, ArrowUpDown } from "lucide-react";
-import { getStudents, deleteStudent, updateStudent, logActivity, getCustomFields } from "@/lib/queries";
+import { Search, Filter, Eye, Trash2, FileSpreadsheet, Users, ArrowUpDown, AlertCircle, Clock, CheckCircle, XCircle } from "lucide-react";
+import { getStudents, deleteStudent, updateStudent, logActivity, getCustomFields, requestDeletion, getDeletionRequests } from "@/lib/queries";
 import { PrintButton } from "@/components/StudentPDF";
 import * as XLSX from "xlsx";
 
@@ -41,7 +41,7 @@ const statusLabels: Record<string, string> = {
 };
 
 export default function Students() {
-  const { isAdmin } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [students, setStudents] = useState<Student[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -50,16 +50,33 @@ export default function Students() {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
   const [fields, setFields] = useState<FieldDef[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<Record<string, string>>({});
 
   useEffect(() => {
     loadStudents();
     loadFields();
+    loadPendingRequests();
   }, []);
 
   async function loadFields() {
     try {
       const data = await getCustomFields();
       setFields(data.map((f: any) => ({ label: f.label, sort_order: f.sort_order })));
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  async function loadPendingRequests() {
+    try {
+      const data = await getDeletionRequests();
+      const map: Record<string, string> = {};
+      (data as unknown as { student_id: string; status: string }[]).forEach((r) => {
+        if (r.status === 'pending') {
+          map[r.student_id] = r.status;
+        }
+      });
+      setPendingRequests(map);
     } catch (err) {
       console.error(err);
     }
@@ -122,6 +139,16 @@ export default function Students() {
       toast.success("Student deleted");
     } catch {
       toast.error("Failed to delete student");
+    }
+  };
+
+  const handleRequestDelete = async (student: Student) => {
+    try {
+      await requestDeletion(student.id, student.data["Full Name"] || "Unknown");
+      setPendingRequests((prev) => ({ ...prev, [student.id]: "pending" }));
+      toast.success("Deletion request sent to admin");
+    } catch {
+      toast.error("Failed to send deletion request");
     }
   };
 
@@ -316,14 +343,28 @@ export default function Students() {
                               )}
                             </DialogContent>
                           </Dialog>
-                          {isAdmin && (
+                          {isAdmin ? (
                             <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"
                               onClick={() => {
                                 if (confirm("Delete this student?")) handleDelete(student.id);
                               }}>
                               <Trash2 className="h-4 w-4" />
                             </Button>
-                          )}
+                          ) : student.created_by_id === user?.id ? (
+                            pendingRequests[student.id] ? (
+                              <span className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground px-2 py-1">
+                                <Clock className="h-3 w-3" />
+                                Pending
+                              </span>
+                            ) : (
+                              <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"
+                                onClick={() => {
+                                  if (confirm("Request to delete this student?")) handleRequestDelete(student);
+                                }}>
+                                <AlertCircle className="h-4 w-4" />
+                              </Button>
+                            )
+                          ) : null}
                         </div>
                       </TableCell>
                     </TableRow>

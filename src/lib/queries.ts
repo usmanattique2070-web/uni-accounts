@@ -343,3 +343,81 @@ export async function logActivity(action: string, entity: string, entityId?: str
     })
   if (error) console.error('Failed to log activity:', error)
 }
+
+// ===================== DELETION REQUESTS =====================
+
+export async function requestDeletion(studentId: string, studentName: string) {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  const { error } = await supabase
+    .from('deletion_requests')
+    .insert({
+      student_id: studentId,
+      student_name: studentName,
+      requested_by: user.id,
+    })
+  if (error) throw error
+}
+
+export async function getDeletionRequests() {
+  const { data, error } = await supabase
+    .from('deletion_requests')
+    .select('*')
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data
+}
+
+export async function approveDeletionRequest(requestId: string) {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  const { data: request, error: fetchError } = await supabase
+    .from('deletion_requests')
+    .select('student_id')
+    .eq('id', requestId)
+    .single()
+  if (fetchError) throw fetchError
+
+  const { error: deleteError } = await supabase
+    .from('students')
+    .delete()
+    .eq('id', request.student_id)
+  if (deleteError) throw deleteError
+
+  const { error: updateError } = await supabase
+    .from('deletion_requests')
+    .update({
+      status: 'approved',
+      reviewed_by: user.id,
+      reviewed_at: new Date().toISOString(),
+    })
+    .eq('id', requestId)
+  if (updateError) throw updateError
+}
+
+export async function rejectDeletionRequest(requestId: string) {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  const { error } = await supabase
+    .from('deletion_requests')
+    .update({
+      status: 'rejected',
+      reviewed_by: user.id,
+      reviewed_at: new Date().toISOString(),
+    })
+    .eq('id', requestId)
+  if (error) throw error
+}
+
+export async function getDeletionRequestsForStudent(studentId: string) {
+  const { data, error } = await supabase
+    .from('deletion_requests')
+    .select('id, status')
+    .eq('student_id', studentId)
+    .in('status', ['pending'])
+  if (error) throw error
+  return data
+}
