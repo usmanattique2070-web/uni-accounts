@@ -101,15 +101,9 @@ export default function Dashboard() {
   const [dbPrograms, setDbPrograms] = useState<string[]>([]);
   const [dbCourses, setDbCourses] = useState<string[]>([]);
 
-  const programs = useMemo(() => {
-    const fromStudents = new Set(allStudents.map((s) => s.data["Degree Program"]).filter(Boolean));
-    return [...new Set([...dbPrograms, ...fromStudents])];
-  }, [allStudents, dbPrograms]);
+  const programs = useMemo(() => dbPrograms, [dbPrograms]);
 
-  const courses = useMemo(() => {
-    const fromStudents = new Set(allStudents.map((s) => s.data["Interested Course"]).filter(Boolean));
-    return [...new Set([...dbCourses, ...fromStudents])];
-  }, [allStudents, dbCourses]);
+  const courses = useMemo(() => dbCourses, [dbCourses]);
 
   const degreeCounts = useMemo(() => {
     const counts: Record<string, number> = {};
