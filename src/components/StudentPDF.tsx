@@ -110,15 +110,6 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: "#475569",
     letterSpacing: 0.5,
-    marginBottom: 6,
-  },
-  contactBar: {
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 15,
-    fontSize: 7,
-    color: "#64748b",
-    marginTop: 4,
   },
 
   // Form title
@@ -368,13 +359,6 @@ function PDFDocument({
         <View style={styles.header}>
           <Text style={styles.universityName}>NIPPON INSTITUTE OF ADVANCED SCIENCES</Text>
           <Text style={styles.universitySubtitle}>Excellence in Education & Research</Text>
-          <View style={styles.contactBar}>
-            <Text>Phone: +81-XXX-XXXX-XXXX</Text>
-            <Text>|</Text>
-            <Text>www.nias.edu</Text>
-            <Text>|</Text>
-            <Text>info@nias.edu</Text>
-          </View>
         </View>
 
         {/* Form title + reference */}
