@@ -5,8 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { GraduationCap, LogIn } from "lucide-react";
+import { LogIn } from "lucide-react";
 import { signIn } from "@/lib/queries";
+import niasLogo from "@/assets/niaslogo.jpg";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -44,8 +45,8 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100">
       <Card className="w-full max-w-sm shadow-lg">
         <CardHeader className="text-center space-y-2">
-          <div className="mx-auto h-12 w-12 rounded-xl bg-primary flex items-center justify-center mb-2">
-            <GraduationCap className="h-6 w-6 text-white" />
+          <div className="mx-auto h-14 w-14 rounded-xl flex items-center justify-center mb-2">
+            <img src={niasLogo} alt="NIAS Logo" className="h-14 w-14 object-contain rounded-xl" />
           </div>
           <CardTitle className="text-xl">University Admission System</CardTitle>
           <p className="text-sm text-muted-foreground">Sign in to your account</p>
