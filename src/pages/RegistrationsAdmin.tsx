@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { Search, Users, Globe, Shield, CheckCircle, XCircle, Clock, FileSpreadsheet } from "lucide-react";
-import { getRegistrations, updateRegistrationStatus, getRegistrationStats } from "@/lib/queries";
+import { getRegistrations, updateRegistrationStatus, getRegistrationStats, getStaffNames } from "@/lib/queries";
 import * as XLSX from "xlsx";
 
 type Registration = {
@@ -20,7 +20,6 @@ type Registration = {
   student_name: string;
   student_phone: string | null;
   created_at: string;
-  users?: { name: string } | null;
 };
 
 const statusColors: Record<string, string> = {
@@ -38,6 +37,7 @@ const statusLabels: Record<string, string> = {
 export default function RegistrationsAdmin() {
   const [loading, setLoading] = useState(true);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
+  const [staffNames, setStaffNames] = useState<Record<string, string>>({});
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -48,6 +48,15 @@ export default function RegistrationsAdmin() {
       try {
         const data = await getRegistrations();
         setRegistrations(data as unknown as Registration[]);
+
+        const staffIds = (data as unknown as Registration[])
+          .filter(r => r.staff_id)
+          .map(r => r.staff_id!);
+        const uniqueIds = [...new Set(staffIds)];
+        if (uniqueIds.length > 0) {
+          const names = await getStaffNames(uniqueIds);
+          setStaffNames(names);
+        }
 
         const statsData = await getRegistrationStats();
         setStats(statsData);
@@ -105,7 +114,7 @@ export default function RegistrationsAdmin() {
       ...Object.fromEntries(
         Object.entries(r.data).map(([key, value]) => [key, value])
       ),
-      Type: r.submission_type === "online" ? "Online Submit" : `Staff: ${r.users?.name || "Unknown"}`,
+      Type: r.submission_type === "online" ? "Online Submit" : `Staff: ${staffNames[r.staff_id || ""] || "Unknown"}`,
       Status: statusLabels[r.status] || r.status,
       Date: r.created_at ? new Date(r.created_at).toLocaleDateString() : "",
     }));
@@ -289,7 +298,7 @@ export default function RegistrationsAdmin() {
                           ) : (
                             <>
                               <Shield className="h-3 w-3" />
-                              Staff: {reg.users?.name || "Unknown"}
+                              Staff: {staffNames[reg.staff_id || ""] || "Unknown"}
                             </>
                           )}
                         </Badge>

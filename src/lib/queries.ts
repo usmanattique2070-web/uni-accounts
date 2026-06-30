@@ -451,10 +451,22 @@ export async function submitStaffRegistration(data: Record<string, unknown>) {
 export async function getRegistrations() {
   const { data, error } = await supabase
     .from('registrations')
-    .select('*, users!registrations_staff_id_fkey(name)')
+    .select('*')
     .order('created_at', { ascending: false })
   if (error) throw error
   return data
+}
+
+export async function getStaffNames(staffIds: string[]) {
+  if (staffIds.length === 0) return {}
+  const { data, error } = await supabase
+    .from('users')
+    .select('id, name')
+    .in('id', staffIds)
+  if (error) return {}
+  const map: Record<string, string> = {}
+  data?.forEach((u: { id: string; name: string }) => { map[u.id] = u.name })
+  return map
 }
 
 export async function updateRegistrationStatus(id: string, status: 'approved' | 'rejected') {
