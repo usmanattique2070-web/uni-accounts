@@ -14,9 +14,9 @@ import {
   Download,
   FileSpreadsheet,
   AlertCircle,
-  Trash2,
   CheckCircle,
   XCircle,
+  Globe,
 } from "lucide-react";
 import { useNavigate } from "react-router";
 import { Button } from "@/components/ui/button";
@@ -42,7 +42,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getStudents, getStudentStats, getStaffPerformance, getCustomFields, getDegreePrograms, getCourses, getDeletionRequests, approveDeletionRequest, rejectDeletionRequest, logActivity } from "@/lib/queries";
+import { getStudents, getStudentStats, getStaffPerformance, getCustomFields, getDegreePrograms, getCourses, getDeletionRequests, approveDeletionRequest, rejectDeletionRequest, logActivity, getRegistrationStats } from "@/lib/queries";
 import { toast } from "sonner";
 import * as XLSX from "xlsx";
 
@@ -92,6 +92,7 @@ export default function Dashboard() {
   const [allStudents, setAllStudents] = useState<Student[]>([]);
   const [fieldLabels, setFieldLabels] = useState<string[]>([]);
   const [deletionRequests, setDeletionRequests] = useState<Record<string, unknown>[]>([]);
+  const [regStats, setRegStats] = useState({ total: 0, online: 0, byStaff: 0, statusCounts: { pending: 0, approved: 0, rejected: 0 } });
 
   const [filterCourse, setFilterCourse] = useState("all");
   const [filterProgram, setFilterProgram] = useState("all");
@@ -180,6 +181,11 @@ export default function Dashboard() {
           try {
             const requests = await getDeletionRequests();
             setDeletionRequests(requests as unknown as Record<string, unknown>[]);
+          } catch { /* ignore */ }
+
+          try {
+            const rStats = await getRegistrationStats();
+            setRegStats(rStats);
           } catch { /* ignore */ }
         } else {
           setTotal(students.length);
@@ -294,6 +300,7 @@ export default function Dashboard() {
       onApproveDeletion={handleApproveDeletion}
       onRejectDeletion={handleRejectDeletion}
       navigate={navigate}
+      regStats={regStats}
     />
   ) : (
     <StaffDashboard
@@ -335,6 +342,7 @@ function AdminDashboard({
   onApproveDeletion,
   onRejectDeletion,
   navigate,
+  regStats,
 }: {
   user: { name?: string } | null;
   total: number;
@@ -361,6 +369,7 @@ function AdminDashboard({
   onApproveDeletion: (requestId: string) => void;
   onRejectDeletion: (requestId: string) => void;
   navigate: (path: string) => void;
+  regStats: { total: number; online: number; byStaff: number; statusCounts: { pending: number; approved: number; rejected: number } };
 }) {
   return (
     <div className="space-y-6">
@@ -391,6 +400,19 @@ function AdminDashboard({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{total}</div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Online Registrations</CardTitle>
+            <Globe className="h-4 w-4 text-blue-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{regStats.online}</div>
+            <div className="flex items-center gap-1 mt-1">
+              <p className="text-xs text-muted-foreground">From website form</p>
+            </div>
           </CardContent>
         </Card>
 
@@ -695,6 +717,48 @@ function AdminDashboard({
           </CardContent>
         </Card>
       )}
+
+      {/* Online Registrations Summary */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Globe className="h-4 w-4 text-blue-600" />
+            Online Registrations ({regStats.online} total, {regStats.statusCounts.pending} pending)
+          </CardTitle>
+          <Button variant="ghost" size="sm" onClick={() => navigate("/admin/registrations")}>
+            View All
+            <ArrowUpRight className="ml-1 h-3 w-3" />
+          </Button>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-3 gap-4 mb-4">
+            <div className="text-center p-3 bg-yellow-50 rounded-lg">
+              <div className="text-2xl font-bold text-yellow-700">{regStats.statusCounts.pending}</div>
+              <p className="text-xs text-yellow-600">Pending</p>
+            </div>
+            <div className="text-center p-3 bg-green-50 rounded-lg">
+              <div className="text-2xl font-bold text-green-700">{regStats.statusCounts.approved}</div>
+              <p className="text-xs text-green-600">Approved</p>
+            </div>
+            <div className="text-center p-3 bg-red-50 rounded-lg">
+              <div className="text-2xl font-bold text-red-700">{regStats.statusCounts.rejected}</div>
+              <p className="text-xs text-red-600">Rejected</p>
+            </div>
+          </div>
+          {regStats.online === 0 && regStats.byStaff === 0 ? (
+            <div className="text-center py-4 text-muted-foreground">
+              <Globe className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p>No registrations yet</p>
+              <p className="text-xs mt-1">Share the registration link with students</p>
+            </div>
+          ) : (
+            <div className="text-sm text-muted-foreground">
+              <p><strong className="text-foreground">{regStats.online}</strong> students registered online</p>
+              <p><strong className="text-foreground">{regStats.byStaff}</strong> registrations submitted by staff</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Recent Students */}
       <Card>
