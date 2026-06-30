@@ -392,7 +392,7 @@ function AdminDashboard({
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">Total Students</CardTitle>
@@ -418,56 +418,30 @@ function AdminDashboard({
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Enrolled</CardTitle>
-            <UserCheck className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{enrolledCount}</div>
-            <div className="flex items-center gap-1 mt-1">
-              <ArrowUpRight className="h-3 w-3 text-green-600" />
-              <p className="text-xs text-green-600">
-                {total > 0 ? Math.round((enrolledCount / total) * 100) : 0}% rate
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Staff Performance</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">By Source</CardTitle>
             <Shield className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            {staffPerf.length === 0 ? (
-              <p className="text-xs text-muted-foreground">No staff yet</p>
-            ) : (
-              <div className="space-y-1.5">
-                {staffPerf.slice(0, 3).map((s: Record<string, unknown>, i: number) => (
-                  <div key={i} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="h-5 w-5 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                        <span className="text-[10px] font-medium text-primary">
-                          {(s.name as string)?.charAt(0)?.toUpperCase() || "S"}
-                        </span>
-                      </div>
-                      <span className="text-xs truncate">{String(s.name || "Unnamed")}</span>
-                    </div>
-                    <span className="text-xs font-medium">{s.enrolled as number} enrolled</span>
-                  </div>
-                ))}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="h-2.5 w-2.5 rounded-full bg-blue-500" />
+                  <span className="text-sm">Online</span>
+                </div>
+                <span className="text-sm font-medium">{regStats.online}</span>
               </div>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Contacted</CardTitle>
-            <TrendingUp className="h-4 w-4 text-yellow-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{contactedCount}</div>
-            <p className="text-xs text-muted-foreground mt-1">In progress</p>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="h-2.5 w-2.5 rounded-full bg-purple-500" />
+                  <span className="text-sm">Staff</span>
+                </div>
+                <span className="text-sm font-medium">{regStats.byStaff}</span>
+              </div>
+              <div className="flex items-center justify-between border-t pt-2">
+                <span className="text-sm font-medium">Total</span>
+                <span className="text-sm font-bold">{regStats.total}</span>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
