@@ -79,6 +79,8 @@ export interface Database {
           created_by_id: string | null
           status: 'new' | 'contacted' | 'follow_up' | 'enrolled' | 'rejected'
           data: Json
+          submission_type: 'online' | 'staff'
+          staff_id: string | null
           created_at: string
           updated_at: string
         }
@@ -87,6 +89,8 @@ export interface Database {
           created_by_id?: string | null
           status?: 'new' | 'contacted' | 'follow_up' | 'enrolled' | 'rejected'
           data?: Json
+          submission_type?: 'online' | 'staff'
+          staff_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -95,6 +99,8 @@ export interface Database {
           created_by_id?: string | null
           status?: 'new' | 'contacted' | 'follow_up' | 'enrolled' | 'rejected'
           data?: Json
+          submission_type?: 'online' | 'staff'
+          staff_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -213,6 +219,41 @@ export interface Database {
           created_at?: string
           reviewed_by?: string | null
           reviewed_at?: string | null
+        }
+      }
+      registrations: {
+        Row: {
+          id: string
+          data: Json
+          status: 'pending' | 'approved' | 'rejected'
+          submission_type: 'online' | 'staff'
+          staff_id: string | null
+          student_name: string
+          student_phone: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          data?: Json
+          status?: 'pending' | 'approved' | 'rejected'
+          submission_type?: 'online' | 'staff'
+          staff_id?: string | null
+          student_name: string
+          student_phone?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          data?: Json
+          status?: 'pending' | 'approved' | 'rejected'
+          submission_type?: 'online' | 'staff'
+          staff_id?: string | null
+          student_name?: string
+          student_phone?: string | null
+          created_at?: string
+          updated_at?: string
         }
       }
     }

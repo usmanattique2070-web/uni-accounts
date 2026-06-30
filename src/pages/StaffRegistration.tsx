@@ -1,0 +1,276 @@
+import { useState, useEffect } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { toast } from "sonner";
+import { UserPlus, ArrowLeft, Shield, CheckCircle } from "lucide-react";
+import { Link } from "react-router";
+import { getCustomFields, getActiveDegreePrograms, getActiveCourses, submitStaffRegistration } from "@/lib/queries";
+
+type CustomField = {
+  id: string;
+  label: string;
+  type: string;
+  options: string[];
+  is_required: boolean;
+  sort_order: number;
+};
+
+type Program = { id: string; name: string; duration: string };
+type Course = { id: string; name: string; code: string };
+
+export default function StaffRegistration() {
+  const { user } = useAuth();
+  const [fields, setFields] = useState<CustomField[]>([]);
+  const [programs, setPrograms] = useState<Program[]>([]);
+  const [courses, setCourses] = useState<Course[]>([]);
+  const [formData, setFormData] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [lastSubmitted, setLastSubmitted] = useState<{ data: Record<string, string>; createdAt: string } | null>(null);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const [fieldsData, programsData, coursesData] = await Promise.all([
+          getCustomFields(),
+          getActiveDegreePrograms(),
+          getActiveCourses(),
+        ]);
+        setFields(fieldsData as unknown as CustomField[]);
+        setPrograms(programsData as unknown as Program[]);
+        setCourses(coursesData as unknown as Course[]);
+
+        const initial: Record<string, string> = {};
+        fieldsData.forEach((f: unknown) => {
+          const field = f as CustomField;
+          initial[field.id] = "";
+        });
+        setFormData(initial);
+      } catch (err) {
+        toast.error("Failed to load form data");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, []);
+
+  const getSelectOptions = (field: CustomField): string[] => {
+    if (field.options && field.options.length > 0) {
+      return field.options;
+    }
+
+    const label = field.label.toLowerCase();
+    if (label.includes("degree") || label.includes("program")) {
+      return programs.map((p) => `${p.name} (${p.duration})`);
+    }
+    if (label.includes("course")) {
+      return courses.map((c) => `${c.name} (${c.code})`);
+    }
+
+    return [];
+  };
+
+  const handleChange = (fieldId: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [fieldId]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const fieldData: Record<string, string> = {};
+    fields.forEach((f) => {
+      if (formData[f.id]) {
+        fieldData[f.label] = formData[f.id];
+      }
+    });
+
+    setSubmitting(true);
+    try {
+      await submitStaffRegistration(fieldData);
+      toast.success("Student registered successfully!");
+      setLastSubmitted({ data: fieldData, createdAt: new Date().toISOString() });
+      const reset: Record<string, string> = {};
+      fields.forEach((f) => { reset[f.id] = ""; });
+      setFormData(reset);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to register student";
+      toast.error(message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6 max-w-4xl mx-auto">
+        <Skeleton className="h-8 w-64" />
+        <Skeleton className="h-96" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6 max-w-4xl mx-auto">
+      <div className="flex items-center gap-4">
+        <Button variant="outline" size="icon" asChild>
+          <Link to="/"><ArrowLeft className="h-4 w-4" /></Link>
+        </Button>
+        <div className="flex-1">
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold tracking-tight">Staff Registration</h1>
+            <Badge variant="secondary" className="flex items-center gap-1">
+              <Shield className="h-3 w-3" />
+              Staff
+            </Badge>
+          </div>
+          <p className="text-muted-foreground">
+            Register student on behalf of | Logged in as: {user?.name || user?.email}
+          </p>
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit}>
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <UserPlus className="h-4 w-4" />
+              Student Information
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {fields.map((field) => {
+              const options = getSelectOptions(field);
+              return (
+                <div key={field.id} className="space-y-2">
+                  <Label htmlFor={field.id}>
+                    {field.label}
+                    {field.is_required && <span className="text-red-500 ml-1">*</span>}
+                  </Label>
+                  {field.type === "text" && (
+                    <Input
+                      id={field.id}
+                      placeholder={`Enter ${field.label.toLowerCase()}`}
+                      value={formData[field.id] || ""}
+                      onChange={(e) => handleChange(field.id, e.target.value)}
+                    />
+                  )}
+                  {field.type === "textarea" && (
+                    <Textarea
+                      id={field.id}
+                      placeholder={`Enter ${field.label.toLowerCase()}`}
+                      value={formData[field.id] || ""}
+                      onChange={(e) => handleChange(field.id, e.target.value)}
+                      rows={3}
+                    />
+                  )}
+                  {field.type === "number" && (
+                    <Input
+                      id={field.id}
+                      type="number"
+                      placeholder={`Enter ${field.label.toLowerCase()}`}
+                      value={formData[field.id] || ""}
+                      onChange={(e) => handleChange(field.id, e.target.value)}
+                    />
+                  )}
+                  {field.type === "date" && (
+                    <Input
+                      id={field.id}
+                      type="date"
+                      value={formData[field.id] || ""}
+                      onChange={(e) => handleChange(field.id, e.target.value)}
+                    />
+                  )}
+                  {field.type === "boolean" && (
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        id={field.id}
+                        checked={formData[field.id] === "true"}
+                        onCheckedChange={(checked) => handleChange(field.id, checked ? "true" : "false")}
+                      />
+                      <Label htmlFor={field.id} className="text-sm text-muted-foreground">
+                        {formData[field.id] === "true" ? "Yes" : "No"}
+                      </Label>
+                    </div>
+                  )}
+                  {field.type === "select" && (
+                    <Select
+                      value={formData[field.id] || ""}
+                      onValueChange={(value) => handleChange(field.id, value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {options.length === 0 ? (
+                          <SelectItem value="__none" disabled>No options available</SelectItem>
+                        ) : (
+                          options.map((opt) => (
+                            <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+              );
+            })}
+          </CardContent>
+        </Card>
+
+        <div className="flex items-center justify-end gap-4 mt-6">
+          <Button type="button" variant="outline" onClick={() => {
+            const reset: Record<string, string> = {};
+            fields.forEach((f) => { reset[f.id] = ""; });
+            setFormData(reset);
+          }}>
+            Reset
+          </Button>
+          <Button type="submit" disabled={submitting}>
+            {submitting ? "Registering..." : "Register Student"}
+          </Button>
+        </div>
+      </form>
+
+      {lastSubmitted && (
+        <Card className="border-green-200 bg-green-50">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3 mb-4">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+              <div>
+                <p className="text-green-800 font-medium">Student registered successfully!</p>
+                <p className="text-green-600 text-sm">Submitted by: {user?.name || user?.email}</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
+              {Object.entries(lastSubmitted.data).map(([label, value]) => (
+                <div key={label}>
+                  <span className="text-muted-foreground">{label}:</span>
+                  <span className="ml-1 font-medium">{value}</span>
+                </div>
+              ))}
+            </div>
+            <Button variant="outline" className="mt-4" onClick={() => setLastSubmitted(null)}>
+              Dismiss
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}

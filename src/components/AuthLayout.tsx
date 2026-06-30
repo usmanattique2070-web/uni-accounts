@@ -30,6 +30,7 @@ import {
   Settings,
   Shield,
   MoreHorizontal,
+  ClipboardList,
 } from "lucide-react";
 import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
@@ -83,12 +84,14 @@ function MobileLayout({ children }: { children: ReactNode }) {
     { icon: LayoutDashboard, label: "Dashboard", path: "/" },
     { icon: UserPlus, label: "Add Student", path: "/add-student" },
     { icon: Users, label: "Students", path: "/students" },
+    { icon: UserPlus, label: "Staff Register", path: "/staff-register" },
   ];
 
   const overflowItems = [
     ...(isAdmin ? [
       { icon: BookOpen, label: "Programs & Courses", path: "/programs" },
       { icon: Shield, label: "Staff Management", path: "/staff" },
+      { icon: ClipboardList, label: "Registrations", path: "/admin/registrations" },
     ] : []),
     { icon: Settings, label: "Settings", path: "/settings" },
   ];
@@ -187,9 +190,11 @@ function DesktopLayout({ children, setSidebarWidth }: { children: ReactNode; set
     { icon: LayoutDashboard, label: "Dashboard", path: "/" },
     { icon: UserPlus, label: "Add Student", path: "/add-student" },
     { icon: Users, label: "Students", path: "/students" },
+    { icon: UserPlus, label: "Staff Register", path: "/staff-register" },
     ...(isAdmin ? [
       { icon: BookOpen, label: "Programs & Courses", path: "/programs" },
       { icon: Shield, label: "Staff Management", path: "/staff" },
+      { icon: ClipboardList, label: "Registrations", path: "/admin/registrations" },
     ] : []),
     { icon: Settings, label: "Settings", path: "/settings" },
   ];

@@ -421,3 +421,64 @@ export async function getDeletionRequestsForStudent(studentId: string) {
   if (error) throw error
   return data
 }
+
+// ===================== REGISTRATIONS =====================
+
+export async function submitPublicRegistration(data: Record<string, unknown>) {
+  const { error } = await supabase.from('registrations').insert({
+    data,
+    submission_type: 'online',
+    student_name: (data['Full Name'] as string) || 'Unknown',
+    student_phone: (data['Phone Number'] as string) || null,
+  })
+  if (error) throw error
+}
+
+export async function submitStaffRegistration(data: Record<string, unknown>) {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Not authenticated')
+
+  const { error } = await supabase.from('registrations').insert({
+    data,
+    submission_type: 'staff',
+    staff_id: user.id,
+    student_name: (data['Full Name'] as string) || 'Unknown',
+    student_phone: (data['Phone Number'] as string) || null,
+  })
+  if (error) throw error
+}
+
+export async function getRegistrations() {
+  const { data, error } = await supabase
+    .from('registrations')
+    .select('*, users!registrations_staff_id_fkey(name)')
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data
+}
+
+export async function updateRegistrationStatus(id: string, status: 'approved' | 'rejected') {
+  const { error } = await supabase
+    .from('registrations')
+    .update({ status, updated_at: new Date().toISOString() })
+    .eq('id', id)
+  if (error) throw error
+}
+
+export async function getRegistrationStats() {
+  const { data, error } = await supabase
+    .from('registrations')
+    .select('submission_type, status, created_at')
+  if (error) throw error
+
+  const total = data.length
+  const online = data.filter(r => r.submission_type === 'online').length
+  const byStaff = data.filter(r => r.submission_type === 'staff').length
+  const statusCounts = {
+    pending: data.filter(r => r.status === 'pending').length,
+    approved: data.filter(r => r.status === 'approved').length,
+    rejected: data.filter(r => r.status === 'rejected').length,
+  }
+
+  return { total, online, byStaff, statusCounts }
+}
