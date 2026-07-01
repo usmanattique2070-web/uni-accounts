@@ -425,11 +425,10 @@ export async function getDeletionRequestsForStudent(studentId: string) {
 // ===================== REGISTRATIONS =====================
 
 export async function submitPublicRegistration(data: Record<string, unknown>) {
-  const { error } = await supabase.from('registrations').insert({
+  const { error } = await supabase.from('students').insert({
     data,
-    submission_type: 'online',
-    student_name: (data['Full Name'] as string) || 'Unknown',
-    student_phone: (data['Phone Number'] as string) || null,
+    status: 'new',
+    created_by_id: null,
   })
   if (error) throw error
 }
@@ -438,59 +437,10 @@ export async function submitStaffRegistration(data: Record<string, unknown>) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('Not authenticated')
 
-  const { error } = await supabase.from('registrations').insert({
+  const { error } = await supabase.from('students').insert({
     data,
-    submission_type: 'staff',
-    staff_id: user.id,
-    student_name: (data['Full Name'] as string) || 'Unknown',
-    student_phone: (data['Phone Number'] as string) || null,
+    status: 'new',
+    created_by_id: user.id,
   })
   if (error) throw error
-}
-
-export async function getRegistrations() {
-  const { data, error } = await supabase
-    .from('registrations')
-    .select('*')
-    .order('created_at', { ascending: false })
-  if (error) throw error
-  return data
-}
-
-export async function getStaffNames(staffIds: string[]) {
-  if (staffIds.length === 0) return {}
-  const { data, error } = await supabase
-    .from('users')
-    .select('id, name')
-    .in('id', staffIds)
-  if (error) return {}
-  const map: Record<string, string> = {}
-  data?.forEach((u: { id: string; name: string }) => { map[u.id] = u.name })
-  return map
-}
-
-export async function updateRegistrationStatus(id: string, status: 'approved' | 'rejected') {
-  const { error } = await supabase
-    .from('registrations')
-    .update({ status, updated_at: new Date().toISOString() })
-    .eq('id', id)
-  if (error) throw error
-}
-
-export async function getRegistrationStats() {
-  const { data, error } = await supabase
-    .from('registrations')
-    .select('submission_type, status, created_at')
-  if (error) throw error
-
-  const total = data.length
-  const online = data.filter(r => r.submission_type === 'online').length
-  const byStaff = data.filter(r => r.submission_type === 'staff').length
-  const statusCounts = {
-    pending: data.filter(r => r.status === 'pending').length,
-    approved: data.filter(r => r.status === 'approved').length,
-    rejected: data.filter(r => r.status === 'rejected').length,
-  }
-
-  return { total, online, byStaff, statusCounts }
 }

@@ -11,7 +11,6 @@ import Staff from "./pages/Staff";
 import SettingsPage from "./pages/SettingsPage";
 import PublicRegistration from "./pages/PublicRegistration";
 import StaffRegistration from "./pages/StaffRegistration";
-import RegistrationsAdmin from "./pages/RegistrationsAdmin";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth({ redirectOnUnauthenticated: true });
@@ -40,7 +39,6 @@ export default function App() {
       <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
       <Route path="/programs" element={<AdminRoute><Programs /></AdminRoute>} />
       <Route path="/staff" element={<AdminRoute><Staff /></AdminRoute>} />
-      <Route path="/admin/registrations" element={<AdminRoute><RegistrationsAdmin /></AdminRoute>} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
